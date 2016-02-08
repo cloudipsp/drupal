@@ -1,0 +1,122 @@
+<?php
+
+/**
+ * @file
+ * Install file for module uc_fondy
+ */
+
+/**
+ * Implements hook_shema().
+ */
+function uc_fondy_schema() {
+  $scheme = array();
+  $schema['uc_fondy_transaction'] = array(
+    'description' => 'Completed Transactions',
+    'fields' => array(
+      'txnid' => array(
+        'type' => 'int',
+        'size' => 'normal',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'The transactions id.',
+      ),
+      'amount' => array(
+        'type' => 'numeric',
+        'unsigned' => TRUE,
+        'precision' => 6,
+        'scale' => 2,
+        'default' => 0.00,
+        'description' => 'The transactions amount.',
+      ),
+      'description' => array(
+        'type' => 'text',
+        'size' => 'normal',
+        'not null' => TRUE,
+        'description' => 'Info about transactions.',
+      ),
+
+      'created' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Time of payment creation',
+      ),
+      'system' => array(
+        'type' => 'varchar',
+        'length' => 10,
+        'not null' => TRUE,
+       // 'default' => '',
+        'description' => 'system type',
+      ),
+      'status' => array(
+        'type' => 'varchar',
+        'length' => 10,
+        'not null' => TRUE,
+       // 'default' => '',
+        'description' => 'system type',
+      ),
+    ),
+    'primary key' => array('txnid'),
+    'indexes' => array('txnid' => array('txnid')),
+  );
+
+
+  $schema['uc_fondy_rates'] = array(
+    'description' => 'Info about',
+    'fields' => array(
+      'merchant_id' => array(
+        'type' => 'varchar',
+        'length' => 13,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'The merchant identificator.',
+      ),
+      'secret_key' => array(
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'The secret key called signature.',
+      ),
+      'debug_mode' => array(
+        'type' => 'varchar',
+        'length' => 1,
+        'not null' => TRUE,
+        'default' => '1',
+        'description' => 'Status of debug mode.',
+      ),
+      'currency' => array(
+        'type' => 'varchar',
+        'length' => 3,
+        'not null' => TRUE,
+        'default' => 'UAH',
+        'description' => 'Type of currency.',
+      ),      
+       'back_url' => array(
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'Back ref url.',
+      ),
+       'vat' => array(
+        'type' => 'varchar',
+        'length' => 4,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'VAT.',
+      ),
+      'language' => array(
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'Language of payment page.',
+      ),
+    ),
+    'primary key' => array('merchant_id'),
+  );
+  return $schema;
+}

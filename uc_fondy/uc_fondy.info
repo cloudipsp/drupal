@@ -1,0 +1,18 @@
+name = Fondy
+description = Fondy payment gateway for UberCart.
+package = Ubercart - payment
+core = 7.x
+configure = admin/store/settings/cart
+
+dependencies[] = uc_payment
+dependencies[] = uc_order
+dependencies[] = transliteration
+
+files[] = uc_fondy.install
+files[] = uc_fondy.module
+
+version = "7.x-1.0-rc1"
+core = "7.x"
+project = "uc_fondy"
+datestamp = "1346314163"
+
