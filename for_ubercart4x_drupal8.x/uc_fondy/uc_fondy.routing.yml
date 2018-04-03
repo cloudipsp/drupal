@@ -1,0 +1,15 @@
+uc_fondy.complete:
+  path: '/cart/fondy/complete'
+  defaults:
+    _controller: '\Drupal\uc_fondy\Controller\FondyController::complete'
+    _title: 'Order complete'
+  requirements:
+    _permission: 'access content'
+
+uc_fondy.notification:
+  path: '/cart/fondy/notification'
+  defaults:
+    _controller: '\Drupal\uc_fondy\Controller\FondyController::notification'
+    _title: 'Notification callback'
+  requirements:
+    _permission: 'access content'

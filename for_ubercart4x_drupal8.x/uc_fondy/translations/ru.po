@@ -1,0 +1,174 @@
+# $Id$
+#
+# Russian translation of Drupal (general)
+# Copyright YEAR NAME <EMAIL@ADDRESS>
+# Generated from files:
+#  uc_fondy.module: n/a
+#  uc_fondy.info: n/a
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"POT-Creation-Date: 2012-03-16 17:30+0200\n"
+"PO-Revision-Date: 2012-03-16 17:53+0200\n"
+"Language-Team: Russian <EMAIL@ADDRESS>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=((((n%10)==1)&&((n%100)!=11))?(0):(((((n%10)>=2)&&((n%10)<=4))&&(((n%100)<10)||((n%100)>=20)))?(1):2));\n"
+
+#: uc_fondy.module:71
+msgid "fondy"
+msgstr "fondy"
+
+
+#: uc_fondy.module:97;169
+msgid "Currency"
+msgstr "Валюта"
+
+#: uc_fondy.module:98;177;261
+msgid "Merchant ID"
+msgstr "ID мерчанта"
+
+#: uc_fondy.module:99
+msgid "Secret key"
+msgstr "Подпись мерчанта"
+
+#: uc_fondy.module:100;185
+msgid "Rate"
+msgstr "Ставка"
+
+#: uc_fondy.module:101;109
+msgid "Edit"
+msgstr "Редактировать"
+
+#: uc_fondy.module:121
+msgid "Delete checked currency"
+msgstr "Удалить выбранную валюту"
+
+#: uc_fondy.module:125
+msgid "You have not any added currencies"
+msgstr "У Вас нет добавленных валют"
+
+#: uc_fondy.module:172
+msgid "Please, select currency."
+msgstr "Пожалуйста, введите валюту"
+
+#: uc_fondy.module:180
+msgid "Please, enter MERCHANT ID."
+msgstr "Пожалуйста, ID мерчанта"
+
+#: uc_fondy.module:188
+msgid "Please, enter rate of currency."
+msgstr "Пожалуйста, введите ставку по этой валюте"
+
+#: uc_fondy.module:193;267
+msgid "Signature"
+msgstr "Подпись мерчанта"
+
+#: uc_fondy.module:196
+msgid "Please enter signature."
+msgstr "Пожалуйста введите подпись мерчанта"
+
+#: uc_fondy.module:290
+msgid "Cancel"
+msgstr "Отмена"
+
+#: uc_fondy.module:297
+msgid "Back"
+msgstr "Назад"
+
+#: uc_fondy.module:348
+msgid "What type of currency will be used."
+msgstr "Какой тип валюты будет использован"
+
+#: uc_fondy.module:473
+msgid "Status error"
+msgstr "Ошибка"
+
+#: uc_fondy.module:481
+msgid "An error has occurred during payment.  Please contact us to ensure your order has submitted."
+msgstr "Во время платежа возникла ошибка. Пожалуйста свяжитесь с нами."
+
+#: uc_fondy.module:516
+msgid "This number does not match the original price"
+msgstr ""
+
+#: uc_fondy.module:521
+msgid "Your currency does not match the original"
+msgstr ""
+
+#: uc_fondy.module:527
+msgid "Security check failed"
+msgstr "Ошибка подписи мерчанта"
+
+#: uc_fondy.module:536
+msgid "Payment from phone %sender_phone by %pay_way"
+msgstr "Платеж по %pay_way с номером телефона %sender_phone"
+
+#: uc_fondy.module:540
+msgid "A payment has been accepted."
+msgstr "Платеж принят в обработку"
+
+#: uc_fondy.module:621
+msgid ""
+"Your payment has been declined.\r\n"
+"                                         Maybe internet payments on your card is prohibited.\r\n"
+"                                         Or you have exceeded the card limit.\r\n"
+"                                         Ways of solving problem:\r\n"
+"                                         - unlock internet purchasing\r\n"
+"                                         - increase card limit\r\n"
+"                                         - try again in 1 hour\r\n"
+"                                         - try another card"
+msgstr ""
+"Ваш платеж был отклонен.\r\n"
+"Возможно это случилось потому, что платежи через Интернет по вашей карте запрещены или Вы превысили лимит покупок\r\n"
+"Пути решения проблемы: \r\n"
+"- разрешить платежи через интернет\r\n"
+"- увеличить лимит покупок \r\n"
+"- попробовать оплатить через 1 час \r\n"
+"- попробовать оплатить другой картой"
+
+#: uc_fondy.module:635
+msgid "Undefined"
+msgstr "Неопределенный"
+
+#: uc_fondy.module:636
+msgid ""
+"Status of your payment is @status and Your payment has been declined.\r\n"
+"                                 Maybe internet payments on your card is prohibited.\r\n"
+"                                 Or you have exceeded the card limit.\r\n"
+"                                 Ways of solving problem:\r\n"
+"                                 - unlock internet purchasing\r\n"
+"                                 - increase card limit\r\n"
+"                                 - try again in 1 hour\r\n"
+"                                 - try another card"
+msgstr ""
+"Статус Вашего платежа - @status. Поэтому Ваш платеж был отклонен \r\n"
+"Возможно это случилось потому, что платежи через Интернет по вашей карте запрещены или Вы превысили лимит покупок\r\n"
+"Пути решения проблемы: \r\n"
+"- разрешить платежи через интернет\r\n"
+"- увеличить лимит покупок \r\n"
+"- попробовать оплатить через 1 час \r\n"
+"- попробовать оплатить другой картой"
+
+#: uc_fondy.module:23
+msgid "Internal Data"
+msgstr "Внутренние данные"
+
+#: uc_fondy.module:42
+msgid "Overview"
+msgstr "Обзор"
+
+#: uc_fondy.module:48
+msgid "Add currency"
+msgstr "Добавить валюду"
+
+#: uc_fondy.module:56
+msgid "Edit currency"
+msgstr "Редактировать валюту"
+
+#: uc_fondy.info:0
+msgid "Ubercart - payment"
+msgstr "Ubercart - платеж"
+

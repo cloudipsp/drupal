@@ -1,0 +1,23 @@
+# Schema for the configuration files of the uc_fondy module.
+payment_method.settings.fondy:
+  type: mapping
+  label: 'fondy form configuration settings'
+  mapping:
+    merchant_id:
+      type: string
+      label: 'Merchant ID'
+    secret_key:
+      type: string
+      label: 'Secret Key'
+    back_url:
+      type: string
+      label: 'Back ref url. (http://{your_site}/fondy/back_url)'
+    currency:
+      type: string
+      label: 'Type of currency. Leave empty to shop currency'
+    language:
+      type: string
+      label: 'Payment Language'
+    autocapture:
+      type: boolean
+      label: 'Autocapture'

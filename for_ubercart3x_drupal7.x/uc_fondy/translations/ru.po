@@ -21,15 +21,6 @@ msgstr ""
 msgid "fondy"
 msgstr "fondy"
 
-#: uc_fondy.module:74;35
-#: uc_fondy.info:0
-msgid "PayU"
-msgstr "PayU"
-
-#: uc_fondy.module:76
-msgid "Redirect to liqpay to pay by."
-msgstr "Перенаправляет пользователя на сайт fondy для оплаты"
-
 #: uc_fondy.module:97;169
 msgid "Currency"
 msgstr "Валюта"
@@ -93,14 +84,6 @@ msgstr "Назад"
 #: uc_fondy.module:348
 msgid "What type of currency will be used."
 msgstr "Какой тип валюты будет использован"
-
-#: uc_fondy.module:445
-msgid "Place your order via PayU"
-msgstr "Оформить заказ через PayU"
-
-#: uc_fondy.module:449
-msgid "You have not selected the currency. If no selected the currency, contact the site administrator."
-msgstr "В системе PayU не выбрана валюта. Пожалуйста свяжитесь с администратором."
 
 #: uc_fondy.module:473
 msgid "Status error"
@@ -176,10 +159,6 @@ msgstr ""
 msgid "Internal Data"
 msgstr "Внутренние данные"
 
-#: uc_fondy.module:29
-msgid "PayU processing"
-msgstr "PayU обработка"
-
 #: uc_fondy.module:42
 msgid "Overview"
 msgstr "Обзор"
@@ -192,9 +171,6 @@ msgstr "Добавить валюду"
 msgid "Edit currency"
 msgstr "Редактировать валюту"
 
-#: uc_fondy.info:0
-msgid "PayU payment gateway."
-msgstr "Платежный шлюз Fondy"
 
 #: uc_fondy.info:0
 msgid "Ubercart - payment"

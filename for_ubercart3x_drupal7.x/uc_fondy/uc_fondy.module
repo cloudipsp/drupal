@@ -1,0 +1,377 @@
+<?php
+
+/**
+ * @file
+ * Module for work with service fondy. Module uc_fondy add in ubercart new type payment.
+ */
+
+if ( isset( $_GET["FondyTesting"] ) && $_GET["FondyTesting"] == 1 ) {
+	ini_set( 'display_errors', true );
+	error_reporting( E_ALL );
+}
+
+include_once( dirname( __FILE__ ) . '/class/fondy.cls.php' );
+
+/**
+ * Implements hook_permisson().
+ */
+function uc_fondy_permission() {
+	return array(
+		'administer uc_fondy' => array(
+			'title'       => t( 'Administer Fondy Payment Gateway' ),
+			'description' => t( 'Change admin settings' ),
+		),
+	);
+}
+
+/**
+ * Implements hook_menu().
+ */
+function uc_fondy_menu() {
+	$items                               = array();
+	$items['admin/store/settings/fondy'] = array(
+		'title'            => 'Fondy',
+		'page callback'    => 'drupal_get_form',
+		'page arguments'   => array( 'uc_fondy_list' ),
+		'access arguments' => array( 'administer uc_fondy' ),
+		'type'             => MENU_NORMAL_ITEM,
+	);
+
+	$items['fondy/back_url'] = array(
+		'title'           => 'Fondy processing',
+		'page callback'   => 'uc_fondy_back_url',
+		'access callback' => true,
+		'type'            => MENU_CALLBACK
+	);
+
+	return $items;
+}
+
+/**
+ * Implements hook_uc_payment_method().
+ */
+function uc_fondy_uc_payment_method() {
+	$methods          = array();
+	$methods['fondy'] = array(
+		'id'         => 'fondy',
+		'name'       => t( 'Fondy' ),
+		'title'      => theme( 'uc_fondy_payment_method_title' ),
+		'desc'       => t( 'Redirect to fondy to pay by.' ),
+		'callback'   => 'uc_payment_method_fondy',
+		'weight'     => 4,
+		'checkout'   => true,
+		'no_gateway' => true,
+	);
+
+	return $methods;
+}
+
+/**
+ * Adds Fondy settings to the payment method settings form.
+ *
+ * @see uc_fondy_uc_payment_method
+ */
+function uc_payment_method_fondy( $op, &$order, $form = null, &$form_state = null ) {
+	switch ( $op ) {
+		case 'settings':
+			$form = uc_fondy_list( $form, $form_state );
+			unset( $form['submit'] );
+			$form['#submit'][] = 'uc_fondy_list_submit';
+
+			return $form;
+	}
+}
+
+/**
+ * Callback for fondy payment page settings
+ */
+function uc_fondy_list( $form, &$form_state ) {
+	$form      = array();
+	$curType   = array(
+		'UAH' => 'Украинская гривна',
+		'RUB' => 'Российский рубль',
+		'USD' => 'Доллар США',
+		'EUR' => 'Евро'
+	);
+	$languages = array(
+		'ru' => 'Русский',
+		'uk' => 'Украинский',
+		'en' => 'Английский'
+	);
+
+	$data = db_select( 'uc_fondy_rates', 'ulr' )->fields( 'ulr', array(
+		'merchant_id',
+		'secret_key',
+		'currency',
+		'back_url',
+		'language',
+	) )->execute()->fetchObject();
+
+	$form['bmerch'] = array(
+		'#type'  => 'hidden',
+		'#value' => @$data->merchant_id
+	);
+
+	$form['merchant_id'] = array(
+		'#type'          => 'textfield',
+		'#title'         => t( 'Merchant ID' ),
+		'#default_value' => @$data->merchant_id,
+		'#size'          => 40,
+		'#maxlength'     => 100,
+		'#required'      => true
+	);
+
+	$form['secret_key'] = array(
+		'#type'          => 'textfield',
+		'#title'         => t( 'Secret key' ),
+		'#default_value' => @$data->secret_key,
+		'#size'          => 40,
+		'#maxlength'     => 100,
+		'#required'      => true
+	);
+	$form['currency']   = array(
+		'#type'          => 'select',
+		'#title'         => t( 'Currency' ),
+		'#default_value' => @$data->currency,
+		'#options'       => $curType,
+		'#description'   => t( "Please, select currency." ),
+		'#required'      => true,
+	);
+	$form['back_url']   = array(
+		'#type'          => 'textfield',
+		'#title'         => t( 'Back refference' ),
+		'#default_value' => @$data->back_url,
+		'#description'   => t( "You can use http://{domain}/fondy/back_url" ),
+		'#size'          => 60,
+		'#maxlength'     => 255,
+		'#required'      => false
+	);
+	$form['language']   = array(
+		'#type'          => 'select',
+		'#title'         => t( 'LANGUAGE' ),
+		'#default_value' => @$data->language,
+		'#description'   => t( "Choose language of payment page" ),
+		'#options'       => $languages,
+		'#required'      => false
+	);
+	$form['submit']     = array(
+		'#type'  => 'submit',
+		'#value' => t( 'Submit settings' ),
+	);
+
+	return $form;
+}
+
+
+function uc_fondy_list_submit( $form, &$form_state ) {
+
+	db_delete( 'uc_fondy_rates' )->condition( 'merchant_id', $form_state['values']['bmerch'] )->execute();
+
+	db_insert( 'uc_fondy_rates' )->fields( array(
+		'merchant_id' => $form_state['values']['merchant_id'],
+		'secret_key'  => $form_state['values']['secret_key'],
+		'currency'    => $form_state['values']['currency'],
+		'back_url'    => $form_state['values']['back_url'],
+		'language'    => $form_state['values']['language']
+	) )->execute();
+
+	drupal_set_message( t( 'You successfully saved' ) );
+}
+
+
+#--------------------OK----------------------------------------------------------------------------
+#==================================================================================================
+#--------------------------------------------------------------------------------------------------
+
+
+/**
+ * Implements hook_theme().
+ */
+function uc_fondy_theme( $existing, $type, $theme, $path ) {
+	return array( 'uc_fondy_payment_method_title' => array( 'variables' => array(), ) );
+}
+
+/**
+ * Returns HTML for payment method title
+ *
+ * @ingroup themeable
+ */
+function theme_uc_fondy_payment_method_title() {
+	$path  = base_path() . drupal_get_path( 'module', 'uc_fondy' ) . '/images/logo.png';
+	$title = t( 'Fondy' );
+	$title .= '<br />';
+	$attr  = array(
+		'path'       => $path,
+		'alt'        => 'Fondy Payment Gateway',
+		'attributes' => array( 'class' => 'fondy-title-image' )
+	);
+	$title .= theme_image( $attr );
+
+	return $title;
+}
+
+
+#--------------------------------------------------------------------------------------------------
+#==================================================================================================
+#--------------------------------------------------------------------------------------------------
+
+
+/**
+ * Implements hook_form_alter().
+ */
+function uc_fondy_form_alter( &$form, &$form_state, $form_id ) {
+	if ( $form_id == 'uc_cart_checkout_review_form' ) {
+		$order = $form_state['uc_order'];
+		// print_r($form_state);
+		if ( $order->payment_method == 'fondy' ) {
+			unset( $form['actions']['submit'] );
+			$page            = drupal_get_form( 'uc_fondy_submit_form', $order );
+			$form['#prefix'] = '<table ><tr><td>';
+			$form['#suffix'] = '</td><td>' . drupal_render( $page ) . '</td></tr></table>';
+		}
+	}
+}
+
+
+#--------------------------------------------------------------------------------------------------
+#==================================================================================================
+#--------------------------------------------------------------------------------------------------
+
+function getFondySettings() {
+	return db_select( 'uc_fondy_rates', 'ulr' )->fields( 'ulr', array(
+		'merchant_id',
+		'secret_key',
+		'currency',
+		'back_url',
+		'language'
+	) )->execute()->fetchObject();
+}
+
+
+function uc_fondy_submit_form( $form, &$form_state, $order ) {
+	$txnid_count = db_select( 'uc_fondy_transaction', 'ult' )->fields( 'ult', array( 'txnid' ) )->condition( 'txnid', $order->order_id )->execute()->fetchField();
+
+	if ( $txnid_count ) {
+		db_update( 'uc_fondy_transaction' )->fields( array(
+			'created' => $order->created,
+			'status'  => 0
+		) )->condition( 'txnid', $order->order_id )->execute();
+	} else {
+		$txnid = db_insert( 'uc_fondy_transaction' )->fields( array(
+			'txnid'       => $order->order_id,
+			'amount'      => $order->order_total,
+			'description' => "",
+			'system'      => "",
+			'created'     => $order->created,
+			'status'      => '0'
+		) )->execute();
+	}
+
+	$fondySettings = getFondySettings();
+	$amount        = round( $order->order_total * 100 );
+
+	$dataSettings = array(
+		'order_id'            => $order->order_id . Fondy::ORDER_SEPARATOR . time(),
+		'merchant_id'         => $fondySettings->merchant_id,
+		'order_desc'          => 'Order Pay #' . $order->order_id,
+		'amount'              => $amount,
+		'currency'            => $fondySettings->currency,
+		'server_callback_url' => $fondySettings->back_url,
+		'response_url'        => $fondySettings->back_url,
+		'lang'                => $fondySettings->language,
+		'sender_email'        => drupal_substr( $order->primary_email, 0, 50 )
+	);
+
+	$dataSettings['signature'] = Fondy::getSignature( $dataSettings, $fondySettings->secret_key );
+
+	return generateForm( $dataSettings, Fondy::URL );
+}
+
+function generateForm( $data, $url = '' ) {
+	$form['#action'] = Fondy::URL;
+	foreach ( $data as $k => $v ) {
+		if ( ! is_array( $v ) ) {
+			$form[ $k ] = array(
+				'#type'  => 'hidden',
+				'#value' => $v
+			);
+		} else {
+			$i = 0;
+			foreach ( $v as $val ) {
+				$form[ $k . '[' . $i ++ . ']' ] = array(
+					'#type'  => 'hidden',
+					'#value' => $val
+				);
+			}
+		}
+	}
+
+	$form['submit'] = array(
+		'#type'  => 'submit',
+		'#value' => t( 'Pay' )
+	);
+
+	return $form;
+}
+
+
+/**
+ * Callback function with result.
+ */
+function uc_fondy_back_url() {
+	$fondySettings = getFondySettings();
+	list( $orderId, ) = explode( Fondy::ORDER_SEPARATOR, $_POST['order_id'] );
+
+	if ( $_POST['order_status'] == Fondy::ORDER_DECLINED ) {
+
+		drupal_set_message( t( "Your payment has been declined.
+                     Maybe internet payments on your card is prohibited.
+                     Or you have exceeded the card limit.
+                     Ways of solving problem:
+                     - unlock internet purchasing
+                     - increase card limit
+                     - try again in 1 hour
+                     - try another card" ), 'warning' );
+
+		// send email (declined)
+		drupal_mail( 'orderstatus', 'declined', $_POST['sender_email'], $fondySettings->language );
+
+		uc_order_update_status( $orderId, 'canceled' );
+
+		drupal_goto( 'cart' );
+	}
+
+	$paymentInfo = Fondy::isPaymentValid( $fondySettings, $_POST );
+	if ( $paymentInfo === true ) {
+
+
+		if ( $_POST['order_status'] != Fondy::ORDER_APPROVED ) {
+			drupal_set_message( t( 'Your payment is processing. We will inform you about results.' ), 'warning' );
+			uc_order_update_status( $orderId, 'processing' );
+		} else {
+			drupal_mail( 'orderstatus', 'approved', $_POST['sender_email'], $fondySettings->language );
+			uc_order_update_status( $orderId, 'completed' );
+		}
+
+		$_SESSION['uc_checkout'][ $_SESSION['cart_order'] ]['do_complete'] = true;
+		drupal_goto( 'cart/checkout/complete' );
+	} else {
+		drupal_set_message( $paymentInfo, 'warning' );
+		drupal_goto( 'cart' );
+	}
+}
+
+function orderstatus_mail( $key, &$message, $params ) {
+	switch ( $key ) {
+		case 'approved':
+			$message['subject'] = t( 'Order approved.' );
+			$message['body'][]  = t( "Your payment has been successfully handled." );
+			break;
+		case 'declined':
+			$message['subject'] = t( 'Order declined.' );
+			$message['body'][]  = t( "Your payment has been declined.
+                                 Maybe internet payments on your card is prohibited.
+                                 Or you have exceeded the card limit." );
+			break;
+	}
+}
