@@ -1,0 +1,12 @@
+name: Fondy Commerce Payment Gateway
+type: module
+description: 'Fondy payment gateway.'
+package: Commerce
+core: 8.x
+dependencies:
+  - commerce:commerce_payment
+  - commerce
+
+version: '8.x-1.0'
+core: '8.x'
+project: 'commerce_fondy'
