@@ -59,7 +59,8 @@
         '#required' => TRUE,
       ];
 
-      $languages = $this->getFondyLanguages() + [LanguageInterface::LANGCODE_NOT_SPECIFIED => $this->t('Language of the user')];
+      $languages = $this->getFondyLanguages()
+        + [LanguageInterface::LANGCODE_NOT_SPECIFIED => $this->t('Language of the user')];
       $form['language'] = [
         '#type' => 'select',
         '#title' => $this->t('Language'),
@@ -108,7 +109,11 @@
     }
 
     /**
-     * {@inheritdoc}
+     * @param OrderInterface $order
+     * @param Request $request
+     * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+     * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
+     * @throws \Drupal\Core\Entity\EntityStorageException
      */
     public function onReturn(OrderInterface $order, Request $request) {
 
@@ -119,14 +124,13 @@
       $data = $request->request->all();
       list($orderId,) = explode(FondyOffsiteForm::ORDER_SEPARATOR, $data['order_id']);
       if ($this->isPaymentValid($settings, $data, $order) !== TRUE) {
-        drupal_set_message($this->t('Invalid Transaction. Please try again'), 'error');
-
+        $this->messenger()->addMessage($this->t('Invalid Transaction. Please try again'), 'error');
         return $this->onCancel($order, $request);
       }
       else {
         $payment_storage = $this->entityTypeManager->getStorage('commerce_payment');
         $payment = $payment_storage->create([
-          'state' => $data['order_status'],
+          'state' => 'completed',
           'amount' => $order->getTotalPrice(),
           'payment_gateway' => $this->entityId,
           'order_id' => $orderId,
@@ -134,15 +138,21 @@
           'remote_state' => $data['order_status'],
         ]);
         $payment->save();
-        drupal_set_message($this->t('Your payment was successful with Order id : @orderid and Transaction id : @payment_id', [
-          '@orderid' => $order->id(),
-          '@payment_id' => $data['payment_id']
-        ]));
+        $this->messenger()->addMessage(
+          $this->t('Your payment was successful with Order id : @orderid and Transaction id : @payment_id',
+            [
+              '@orderid' => $order->id(),
+              '@payment_id' => $data['payment_id']
+            ]
+          ));
       }
     }
 
     /**
-     * {@inheritdoc}
+     * @param Request $request
+     * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+     * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
+     * @throws \Drupal\Core\Entity\EntityStorageException
      */
     public function onNotify(Request $request) {
       $settings = [
@@ -150,7 +160,8 @@
         'merchant_id' => $this->configuration['merchant_id']
       ];
       $data = $request->request->all();
-
+      if (!$data)
+        $data = $request->getContent();
       list($orderId,) = explode(FondyOffsiteForm::ORDER_SEPARATOR, $data['order_id']);
       $order = Order::load($orderId);
       if ($this->isPaymentValid($settings, $data, $order) !== TRUE) {
@@ -158,9 +169,7 @@
       }
       else {
         $payment_storage = $this->entityTypeManager->getStorage('commerce_payment');
-        if ($data['order_status'] == 'expired'
-          or $data['order_status'] == 'declined'
-        ) {
+        if ($data['order_status'] == 'expired' or $data['order_status'] == 'declined') {
           $order->set('state', 'cancelled');
           $order->save();
         }
@@ -173,7 +182,7 @@
           $payment_storage->delete($last);
         }
         $payment = $payment_storage->create([
-          'state' => $data['order_status'],
+          'state' => 'completed',
           'amount' => $order->getTotalPrice(),
           'payment_gateway' => $this->entityId,
           'order_id' => $orderId,
@@ -241,4 +250,5 @@
 
       return TRUE;
     }
+
   }
