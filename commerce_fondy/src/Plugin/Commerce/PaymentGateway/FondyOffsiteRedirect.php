@@ -360,6 +360,8 @@ class FondyOffsiteRedirect extends OffsitePaymentGatewayBase {
   protected function paymentCreate($capture_status, $order, $data) {
     $payment_storage = $this->entityTypeManager->getStorage('commerce_payment');
 
+    \Drupal::logger('commerce_fondy')->notice('Order: #@order_id. Order capture status = @order_capture_status', ['@order_id' => $order->id(), '@order_capture_status' => $capture_status]);
+
     if ($capture_status == 'hold') {
       $payment_storage->create([
         'state' => 'pending',
