@@ -240,6 +240,7 @@ class FondyOffsiteRedirect extends OffsitePaymentGatewayBase {
 
       // Check payment valid.
       if ($this->isPaymentValid($settings, $data, $order) !== TRUE) {
+        \Drupal::logger('commerce_fondy')->warning('Order: #@order_id. Payment is not valid', ['@order_id' => $order_id]);
         die($this->t('Invalid Transaction. Please try again'));
       }
       else {
