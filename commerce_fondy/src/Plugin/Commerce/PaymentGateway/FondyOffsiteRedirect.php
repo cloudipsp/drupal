@@ -289,6 +289,8 @@ class FondyOffsiteRedirect extends OffsitePaymentGatewayBase {
           }
         }
         else {
+          \Drupal::logger('commerce_fondy')->warning('Payment is not found');
+
           $payment_storage->create([
             'state' => 'completed',
             'amount' => $order->getTotalPrice(),
