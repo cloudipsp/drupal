@@ -11,6 +11,7 @@ use Drupal\commerce_payment\Plugin\Commerce\PaymentGateway\OffsitePaymentGateway
 use Drupal\commerce_price\Price;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageInterface;
+use Drupal\node\Entity\Node;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -223,6 +224,12 @@ class FondyOffsiteRedirect extends OffsitePaymentGatewayBase {
     }
 
     if (!empty($data)) {
+
+      Node::create([
+        'type' => 'article',
+        'title' => 'Response from Fondy API',
+        'body' => json_encode($data),
+      ])->save();
 
       // Get order id.
       [$order_id] = explode(FondyOffsiteForm::ORDER_SEPARATOR, $data['order_id']);
