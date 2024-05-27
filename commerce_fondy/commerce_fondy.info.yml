@@ -1,0 +1,7 @@
+name: Commerce Fondy
+type: module
+description: 'Provides Commerce integration for Fondy Payments.'
+package: Commerce
+core_version_requirement: ^8 || ^9 || ^10
+dependencies:
+  - commerce:commerce_payment
