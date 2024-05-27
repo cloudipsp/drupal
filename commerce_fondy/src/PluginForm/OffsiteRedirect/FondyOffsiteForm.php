@@ -20,16 +20,11 @@ class FondyOffsiteForm extends BasePaymentOffsiteForm {
   const REDIRECT_POST = 'post';
 
   /**
-   * The Fondy default response url.
-   */
-  const FONDY_RESPONSE_URL = '';
-
-  /**
    * The Fondy endpoint redirect.
    *
    * @var string
    */
-  const FONDY_ENDPOINT = 'https://dev2.pay.fondy.eu/api/checkout/redirect/';
+  const FONDY_ENDPOINT = 'https://pay.fondy.eu/api/checkout/redirect/';
 
   /**
    * The order separator.
@@ -123,7 +118,7 @@ class FondyOffsiteForm extends BasePaymentOffsiteForm {
       'currency' => $currency_code,
       'response_url' => $response_url,
       'server_callback_url' => $callback_url,
-      'sender_email' => $order->getEmail(),
+      'sender_email' => '',
       'preauth' => $preauth ? 'Y' : 'N',
       'lang' => strtolower($language),
       'reservation_data' => $this->getReservationData($order),
@@ -224,7 +219,9 @@ class FondyOffsiteForm extends BasePaymentOffsiteForm {
     // Rebuild data.
     ksort($data);
     $data = array_values($data);
-    array_unshift($data, $password);
+    if (!empty($password)) {
+      array_unshift($data, $password);
+    }
 
     // Create signature string.
     $data = implode(self::SIGNATURE_SEPARATOR, $data);

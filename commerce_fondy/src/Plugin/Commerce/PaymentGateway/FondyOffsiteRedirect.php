@@ -3,11 +3,15 @@
 namespace Drupal\commerce_fondy\Plugin\Commerce\PaymentGateway;
 
 use Drupal\commerce_fondy\PluginForm\OffsiteRedirect\FondyOffsiteForm;
+use Drupal\commerce_log\LogStorageInterface;
 use Drupal\commerce_order\Entity\Order;
 use Drupal\commerce_order\Entity\OrderInterface;
+use Drupal\commerce_payment\Entity\PaymentInterface;
 use Drupal\commerce_payment\Plugin\Commerce\PaymentGateway\OffsitePaymentGatewayBase;
+use Drupal\commerce_price\Price;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
@@ -25,15 +29,29 @@ use Symfony\Component\HttpFoundation\Request;
 class FondyOffsiteRedirect extends OffsitePaymentGatewayBase {
 
   /**
+   * The log storage.
+   */
+  protected LogStorageInterface $logStorage;
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
+    $instance = parent::create($container, $configuration, $plugin_id, $plugin_definition);
+    $instance->logStorage = $container->get('entity_type.manager')->getStorage('commerce_log');
+    return $instance;
+  }
+
+  /**
    * {@inheritdoc}
    */
   public function defaultConfiguration() {
     return [
-      'merchant_id' => '',
-      'secret_key' => '',
-      'language' => 'en',
-      'preauth' => FALSE,
-    ] + parent::defaultConfiguration();
+        'merchant_id' => '',
+        'secret_key' => '',
+        'language' => 'en',
+        'preauth' => FALSE,
+      ] + parent::defaultConfiguration();
   }
 
   /**
@@ -66,7 +84,7 @@ class FondyOffsiteRedirect extends OffsitePaymentGatewayBase {
     $form['response_url'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Response URL'),
-      '#description' => $this->t('The URL of the merchant page to which the customer will be redirected in the browser after completing the payment. Example: <em>/thank-you</em> </br> If left blank, the url will be set as the default from the Fondy API.'),
+      '#description' => $this->t('The URL of the merchant page to which the customer will be redirected in the browser after completing the payment. Example: <em>/thank-you</em> </br> If left blank, the url will be set as the default from Commerce Checkout Return.'),
       '#default_value' => $this->configuration['response_url'],
     ];
 
@@ -133,36 +151,56 @@ class FondyOffsiteRedirect extends OffsitePaymentGatewayBase {
 
     // Get the request data.
     $data = $request->request->all();
-    // Get order id.
-    [$order_id] = explode(FondyOffsiteForm::ORDER_SEPARATOR, $data['order_id']);
 
-    // Payment validation check.
-    if ($this->isPaymentValid($settings, $data, $order) !== TRUE) {
-      $this->messenger()->addMessage($this->t('Invalid Transaction. Please try again'), 'error');
+    if (!empty($data)) {
+      // Get order id.
+      [$order_id] = explode(FondyOffsiteForm::ORDER_SEPARATOR, $data['order_id']);
 
-      return $this->onCancel($order, $request);
-    }
-    else {
-      /** @var \Drupal\Core\Entity\ContentEntityStorageInterface $storage */
-      $payment_storage = $this->entityTypeManager->getStorage('commerce_payment');
-      $payment_storage->create([
-        'state' => 'completed',
-        'amount' => $order->getTotalPrice(),
-        'payment_gateway' => $this->parentEntity->id(),
-        'order_id' => $order_id,
-        'remote_id' => $data['payment_id'],
-        'remote_state' => $data['order_status'],
-      ])->save();
+      // Payment validation check.
+      if ($this->isPaymentValid($settings, $data, $order) !== TRUE) {
+        $this->messenger()->addMessage($this->t('Invalid Transaction. Please try again'), 'error');
 
-      // Successful order.
-      $this->messenger()->addMessage(
-        $this->t('Your payment was successful with Order id : @orderid and Transaction id : @payment_id',
-          [
-            '@orderid' => $order->id(),
-            '@payment_id' => $data['payment_id'],
-          ]
-        )
-      );
+        return $this->onCancel($order, $request);
+      }
+      else {
+        /** @var \Drupal\Core\Entity\ContentEntityStorageInterface $storage */
+        $payment_storage = $this->entityTypeManager->getStorage('commerce_payment');
+        // Get the capture status.
+        $data_additional_info = json_decode($data['additional_info'], true);
+        $capture_status = $data_additional_info['capture_status'] ?? '';
+
+        if ($capture_status == 'hold') {
+          $payment_storage->create([
+            'state' => 'pending',
+            'amount' => $order->getTotalPrice(),
+            'payment_gateway' => $this->parentEntity->id(),
+            'order_id' => $order_id,
+            'remote_id' => $data['payment_id'],
+            'remote_state' => $data['order_status'],
+          ])->save();
+        }
+
+        if (empty($capture_status)) {
+          $payment_storage->create([
+            'state' => 'completed',
+            'amount' => $order->getTotalPrice(),
+            'payment_gateway' => $this->parentEntity->id(),
+            'order_id' => $order_id,
+            'remote_id' => $data['payment_id'],
+            'remote_state' => $data['order_status'],
+          ])->save();
+        }
+
+        // Successful order.
+        $this->messenger()->addMessage(
+          $this->t('Your payment was successful with Order id : @orderid and Transaction id : @payment_id',
+            [
+              '@orderid' => $order->id(),
+              '@payment_id' => $data['payment_id'],
+            ]
+          )
+        );
+      }
     }
   }
 
@@ -176,8 +214,16 @@ class FondyOffsiteRedirect extends OffsitePaymentGatewayBase {
     ];
 
     // Get the request data.
-    $data = $_POST;
+    if ($request->request->all()) {
+      $data = $request->request->all();
+    }
+
     if (!empty($data)) {
+      $data = $_POST;
+    }
+
+    if (!empty($data)) {
+
       // Get order id.
       [$order_id] = explode(FondyOffsiteForm::ORDER_SEPARATOR, $data['order_id']);
       /** @var \Drupal\Core\Entity\ContentEntityStorageInterface $storage */
@@ -192,29 +238,56 @@ class FondyOffsiteRedirect extends OffsitePaymentGatewayBase {
       else {
         /** @var \Drupal\Core\Entity\ContentEntityStorageInterface $storage */
         $payment_storage = $this->entityTypeManager->getStorage('commerce_payment');
-        if ($data['order_status'] == 'expired' || $data['order_status'] == 'declined') {
-          $order->set('state', 'cancelled');
-          $order->save();
+        $payment_array = $payment_storage->loadByProperties(['order_id' => $order->id()]);
+        /** @var \Drupal\commerce_payment\Entity\Payment $payment */
+        $payment = reset($payment_array);
+
+        if (!empty($payment)) {
+          switch ($data['order_status']) {
+            case 'reversed':
+              // Reformat amount.
+              // Remove 2 last zero from the reversal_amount.
+              $reversal_amount = rtrim($data['reversal_amount'], '00');
+              // Refund the all amount.
+              $this->refundPaymentProcess($payment, new Price($reversal_amount, $data['currency']));
+              break;
+
+            default:
+              // Get the order payment state value.
+              // Check if the state order is not equal to completed or cancelled.
+              // If not to go to process the order.
+              $payment_state = $payment->getState();
+              $payment_state_value = $payment_state->getValue()['value'] ?? '';
+              if ($payment_state_value == 'pending') {
+                // Get the capture status.
+                $data_additional_info = json_decode($data['additional_info'], true);
+                $capture_status = $data_additional_info['capture_status'] ?? '';
+                if (empty($capture_status)) {
+                  $payment_storage->create([
+                    'state' => 'completed',
+                    'amount' => $order->getTotalPrice(),
+                    'payment_gateway' => $this->parentEntity->id(),
+                    'order_id' => $order_id,
+                    'remote_id' => $data['payment_id'],
+                    'remote_state' => $data['order_status'],
+                  ])->save();
+                }
+
+                // Get the capture amount.
+                $capture_amount = '';
+                if (!empty($data_additional_info['capture_amount'])) {
+                  $capture_amount = $data_additional_info['capture_amount'];
+                }
+
+                // Capture process.
+                // Refund the capture amount.
+                if ($capture_status == 'captured') {
+                  $this->refundPaymentProcess($payment, new Price($capture_amount, $data['currency']));
+                }
+              }
+              break;
+          }
         }
-
-        $last = $payment_storage->loadByProperties([
-          'payment_gateway' => $this->parentEntity->id(),
-          'order_id' => $order_id,
-          'remote_id' => $data['payment_id'],
-        ]);
-
-        if (!empty($last)) {
-          $payment_storage->delete($last);
-        }
-
-        $payment_storage->create([
-          'state' => 'completed',
-          'amount' => $order->getTotalPrice(),
-          'payment_gateway' => $this->parentEntity->id(),
-          'order_id' => $order_id,
-          'remote_id' => $data['payment_id'],
-          'remote_state' => $data['order_status'],
-        ])->save();
       }
     }
   }
@@ -274,6 +347,28 @@ class FondyOffsiteRedirect extends OffsitePaymentGatewayBase {
     }
 
     return TRUE;
+  }
+
+  /**
+   * The payment refund process.
+   */
+  protected function refundPaymentProcess(PaymentInterface $payment, Price $amount = NULL) {
+    $this->assertPaymentState($payment, ['pending', 'completed', 'partially_refunded']);
+    // If not specified, refund the entire amount.
+    $amount = $amount ?: $payment->getAmount();
+    $this->assertRefundAmount($payment, $amount);
+
+    $old_refunded_amount = $payment->getRefundedAmount();
+    $new_refunded_amount = $old_refunded_amount->add($amount);
+    if ($new_refunded_amount->lessThan($payment->getAmount())) {
+      $payment->setState('partially_refunded');
+    }
+    else {
+      $payment->setState('refunded');
+    }
+
+    $payment->setRefundedAmount($new_refunded_amount);
+    $payment->save();
   }
 
 }
