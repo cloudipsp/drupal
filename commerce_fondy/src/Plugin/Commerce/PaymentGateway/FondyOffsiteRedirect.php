@@ -244,6 +244,8 @@ class FondyOffsiteRedirect extends OffsitePaymentGatewayBase {
         die($this->t('Invalid Transaction. Please try again'));
       }
       else {
+        \Drupal::logger('commerce_fondy')->notice('Order: #@order_id. Order status = @order_status', ['@order_id' => $order_id, '@order_status' => $data['order_status']]);
+
         /** @var \Drupal\Core\Entity\ContentEntityStorageInterface $storage */
         $payment_storage = $this->entityTypeManager->getStorage('commerce_payment');
         $payment_array = $payment_storage->loadByProperties(['order_id' => $order->id()]);
@@ -290,8 +292,6 @@ class FondyOffsiteRedirect extends OffsitePaymentGatewayBase {
           }
         }
         else {
-          \Drupal::logger('commerce_fondy')->warning('Payment is not found');
-
           $payment_storage->create([
             'state' => 'completed',
             'amount' => $order->getTotalPrice(),
