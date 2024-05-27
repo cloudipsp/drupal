@@ -278,18 +278,18 @@ class FondyOffsiteRedirect extends OffsitePaymentGatewayBase {
                   $this->refundPaymentProcess($payment, new Price($capture_amount, $data['currency']));
                 }
               }
-              else {
-                $payment_storage->create([
-                  'state' => 'completed',
-                  'amount' => $order->getTotalPrice(),
-                  'payment_gateway' => $this->parentEntity->id(),
-                  'order_id' => $order_id,
-                  'remote_id' => $data['payment_id'],
-                  'remote_state' => $data['order_status'],
-                ])->save();
-              }
               break;
           }
+        }
+        else {
+          $payment_storage->create([
+            'state' => 'completed',
+            'amount' => $order->getTotalPrice(),
+            'payment_gateway' => $this->parentEntity->id(),
+            'order_id' => $order_id,
+            'remote_id' => $data['payment_id'],
+            'remote_state' => $data['order_status'],
+          ])->save();
         }
       }
     }
