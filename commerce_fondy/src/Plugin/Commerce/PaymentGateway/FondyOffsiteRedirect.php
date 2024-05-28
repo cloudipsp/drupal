@@ -144,46 +144,6 @@ class FondyOffsiteRedirect extends OffsitePaymentGatewayBase {
   /**
    * {@inheritdoc}
    */
-  public function onReturn(OrderInterface $order, Request $request) {
-    $settings = [
-      'secret_key' => $this->configuration['secret_key'],
-      'merchant_id' => $this->configuration['merchant_id'],
-    ];
-
-    // Get the request data.
-    $data = $request->request->all();
-
-    if (!empty($data)) {
-      // Payment validation check.
-      if ($this->isPaymentValid($settings, $data, $order) !== TRUE) {
-        $this->messenger()->addMessage($this->t('Invalid Transaction. Please try again'), 'error');
-
-        return $this->onCancel($order, $request);
-      }
-      else {
-        // Get the capture status.
-        $data_additional_info = json_decode($data['additional_info'], true);
-        $capture_status = $data_additional_info['capture_status'] ?? '';
-
-        // Create payment.
-        $this->paymentCreate($capture_status, $order, $data);
-
-        // Successful order.
-        $this->messenger()->addMessage(
-          $this->t('Your payment was successful with Order id : @orderid and Transaction id : @payment_id',
-            [
-              '@orderid' => $order->id(),
-              '@payment_id' => $data['payment_id'],
-            ]
-          )
-        );
-      }
-    }
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function onNotify(Request $request) {
     $settings = [
       'secret_key' => $this->configuration['secret_key'],
