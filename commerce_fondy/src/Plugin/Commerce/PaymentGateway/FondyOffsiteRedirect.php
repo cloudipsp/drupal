@@ -5,13 +5,11 @@ namespace Drupal\commerce_fondy\Plugin\Commerce\PaymentGateway;
 use Drupal\commerce_fondy\PluginForm\OffsiteRedirect\FondyOffsiteForm;
 use Drupal\commerce_log\LogStorageInterface;
 use Drupal\commerce_order\Entity\Order;
-use Drupal\commerce_order\Entity\OrderInterface;
 use Drupal\commerce_payment\Entity\PaymentInterface;
 use Drupal\commerce_payment\Plugin\Commerce\PaymentGateway\OffsitePaymentGatewayBase;
 use Drupal\commerce_price\Price;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageInterface;
-use Drupal\node\Entity\Node;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -131,7 +129,7 @@ class FondyOffsiteRedirect extends OffsitePaymentGatewayBase {
    * @return array
    *   Array with key being language codes, and value being names.
    */
-  protected function getFondyLanguages() {
+  public function getFondyLanguages() {
     return [
       'ru' => $this->t('Russian'),
       'uk' => $this->t('Ukrainian'),
@@ -160,13 +158,6 @@ class FondyOffsiteRedirect extends OffsitePaymentGatewayBase {
     }
 
     if (!empty($data)) {
-
-      Node::create([
-        'type' => 'article',
-        'title' => 'Response from Fondy API',
-        'body' => json_encode($data),
-      ])->save();
-
       // Get order id.
       [$order_id] = explode(FondyOffsiteForm::ORDER_SEPARATOR, $data['order_id']);
       /** @var \Drupal\Core\Entity\ContentEntityStorageInterface $storage */
@@ -180,8 +171,6 @@ class FondyOffsiteRedirect extends OffsitePaymentGatewayBase {
         die($this->t('Invalid Transaction. Please try again'));
       }
       else {
-        \Drupal::logger('commerce_fondy')->notice('Order: #@order_id. Order status = @order_status', ['@order_id' => $order_id, '@order_status' => $data['order_status']]);
-
         /** @var \Drupal\Core\Entity\ContentEntityStorageInterface $storage */
         $payment_storage = $this->entityTypeManager->getStorage('commerce_payment');
         $payment_array = $payment_storage->loadByProperties(['order_id' => $order->id()]);
@@ -207,7 +196,7 @@ class FondyOffsiteRedirect extends OffsitePaymentGatewayBase {
               // If not to go to process the order.
               $payment_state = $payment->getState();
               $payment_state_value = $payment_state->getValue()['value'] ?? '';
-              if ($payment_state_value == 'pending') {
+              if ($payment_state_value == 'completed') {
                 if (empty($capture_status)) {
                   return;
                 }
@@ -281,7 +270,7 @@ class FondyOffsiteRedirect extends OffsitePaymentGatewayBase {
   /**
    * Validate sum.
    */
-  protected function validateSum($transaction_currency, $order_currency, $transaction_amount, $order_amount) {
+  public function validateSum($transaction_currency, $order_currency, $transaction_amount, $order_amount) {
     if ($transaction_currency != $order_currency) {
       return FALSE;
     }
@@ -295,7 +284,7 @@ class FondyOffsiteRedirect extends OffsitePaymentGatewayBase {
   /**
    * The payment refund process.
    */
-  protected function refundPaymentProcess(PaymentInterface $payment, Price $amount = NULL) {
+  public function refundPaymentProcess(PaymentInterface $payment, Price $amount = NULL) {
     $this->assertPaymentState($payment, ['pending', 'completed', 'partially_refunded']);
     // If not specified, refund the entire amount.
     $amount = $amount ?: $payment->getAmount();
@@ -317,32 +306,17 @@ class FondyOffsiteRedirect extends OffsitePaymentGatewayBase {
   /**
    * Creation of payment according to capture status.
    */
-  protected function paymentCreate($capture_status, $order, $data) {
+  public function paymentCreate($capture_status, $order, $data) {
     $payment_storage = $this->entityTypeManager->getStorage('commerce_payment');
 
-    \Drupal::logger('commerce_fondy')->notice('Order: #@order_id. Order capture status = @order_capture_status', ['@order_id' => $order->id(), '@order_capture_status' => $capture_status]);
-
-    if ($capture_status == 'hold') {
-      $payment_storage->create([
-        'state' => 'pending',
-        'amount' => $order->getTotalPrice(),
-        'payment_gateway' => $this->parentEntity->id(),
-        'order_id' => $order->id(),
-        'remote_id' => $data['payment_id'],
-        'remote_state' => $data['order_status'],
-      ])->save();
-    }
-
-    if (empty($capture_status)) {
-      $payment_storage->create([
-        'state' => 'completed',
-        'amount' => $order->getTotalPrice(),
-        'payment_gateway' => $this->parentEntity->id(),
-        'order_id' => $order->id(),
-        'remote_id' => $data['payment_id'],
-        'remote_state' => $data['order_status'],
-      ])->save();
-    }
+    $payment_storage->create([
+      'state' => 'completed',
+      'amount' => $order->getTotalPrice(),
+      'payment_gateway' => $this->parentEntity->id(),
+      'order_id' => $order->id(),
+      'remote_id' => $data['payment_id'],
+      'remote_state' => $data['order_status'],
+    ])->save();
   }
 
 }
