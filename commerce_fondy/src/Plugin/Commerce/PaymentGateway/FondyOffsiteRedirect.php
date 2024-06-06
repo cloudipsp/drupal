@@ -190,13 +190,13 @@ class FondyOffsiteRedirect extends OffsitePaymentGatewayBase {
               $this->refundPaymentProcess($payment, new Price($reversal_amount, $data['currency']));
               break;
 
-            default:
+            case 'approved':
               // Get the order payment state value.
-              // Check if the state order is not equal to completed or cancelled.
-              // If not to go to process the order.
+              // Check if the state order is authorization.
               $payment_state = $payment->getState();
               $payment_state_value = $payment_state->getValue()['value'] ?? '';
-              if ($payment_state_value == 'completed') {
+
+              if ($payment_state_value == 'authorization') {
                 if (empty($capture_status)) {
                   return;
                 }
@@ -208,9 +208,9 @@ class FondyOffsiteRedirect extends OffsitePaymentGatewayBase {
                 }
 
                 // Capture process.
-                // Refund the capture amount.
+                // Go to the capture amount.
                 if ($capture_status == 'captured') {
-                  $this->refundPaymentProcess($payment, new Price($capture_amount, $data['currency']));
+                  $this->capturePaymentProcess($payment, new Price($capture_amount, $data['currency']));
                 }
               }
               break;
@@ -218,7 +218,10 @@ class FondyOffsiteRedirect extends OffsitePaymentGatewayBase {
         }
         else {
           // Create payment.
-          $this->paymentCreate($capture_status, $order, $data);
+          $this->paymentCreate($order, $data);
+          // Transition order to state `completed`.
+          $order->set('state', 'completed');
+          $order->save();
         }
       }
     }
@@ -285,7 +288,7 @@ class FondyOffsiteRedirect extends OffsitePaymentGatewayBase {
    * The payment refund process.
    */
   public function refundPaymentProcess(PaymentInterface $payment, Price $amount = NULL) {
-    $this->assertPaymentState($payment, ['pending', 'completed', 'partially_refunded']);
+    $this->assertPaymentState($payment, ['authorization', 'partially_refunded']);
     // If not specified, refund the entire amount.
     $amount = $amount ?: $payment->getAmount();
     $this->assertRefundAmount($payment, $amount);
@@ -304,13 +307,26 @@ class FondyOffsiteRedirect extends OffsitePaymentGatewayBase {
   }
 
   /**
+   * The payment capture process.
+   */
+  public function capturePaymentProcess(PaymentInterface $payment, Price $amount = NULL) {
+    $this->assertPaymentState($payment, ['authorization']);
+    // If not specified, capture the entire amount.
+    $amount = $amount ?: $payment->getAmount();
+
+    $payment->setState('completed');
+    $payment->setAmount($amount);
+    $payment->save();
+  }
+
+  /**
    * Creation of payment according to capture status.
    */
-  public function paymentCreate($capture_status, $order, $data) {
+  public function paymentCreate($order, $data) {
     $payment_storage = $this->entityTypeManager->getStorage('commerce_payment');
 
     $payment_storage->create([
-      'state' => 'completed',
+      'state' => 'authorization',
       'amount' => $order->getTotalPrice(),
       'payment_gateway' => $this->parentEntity->id(),
       'order_id' => $order->id(),
