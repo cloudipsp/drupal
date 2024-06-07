@@ -180,6 +180,12 @@ class FondyOffsiteRedirect extends OffsitePaymentGatewayBase {
         $data_additional_info = json_decode($data['additional_info'], true);
         $capture_status = $data_additional_info['capture_status'] ?? '';
 
+        // Stop the process if the order at the Fondy checkout is in process or expired.
+        $order_status = $data['order_status'] ?? '';
+        if (($order_status == 'processing') || ($order_status == 'expired')) {
+          return;
+        }
+
         if (!empty($payment)) {
           switch ($data['order_status']) {
             case 'reversed':
@@ -219,6 +225,7 @@ class FondyOffsiteRedirect extends OffsitePaymentGatewayBase {
         else {
           // Create payment.
           $this->paymentCreate($order, $data);
+
           // Transition order to state `completed`.
           $order->set('state', 'completed');
           $order->save();
