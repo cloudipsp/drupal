@@ -192,7 +192,7 @@ class FondyOffsiteRedirect extends OffsitePaymentGatewayBase {
               // Reformat amount.
               // Remove 2 last zero from the reversal_amount.
               $reversal_amount = rtrim($data['reversal_amount'], '00');
-              // Refund the all amount.
+              // Refund.
               $this->refundPaymentProcess($payment, new Price($reversal_amount, $data['currency']));
               break;
 
@@ -203,6 +203,16 @@ class FondyOffsiteRedirect extends OffsitePaymentGatewayBase {
               $payment_state_value = $payment_state->getValue()['value'] ?? '';
 
               if ($payment_state_value == 'authorization') {
+                // Partially refund process.
+                if (!empty($data['reversal_amount']) && empty($capture_status)) {
+                  // Reformat amount.
+                  // Remove 2 last zero from the reversal_amount.
+                  $reversal_amount = rtrim($data['reversal_amount'], '00');
+                  // Refund.
+                  $this->refundPaymentProcess($payment, new Price($reversal_amount, $data['currency']));
+                }
+
+                // Capture payment process.
                 if (empty($capture_status)) {
                   return;
                 }
@@ -307,6 +317,9 @@ class FondyOffsiteRedirect extends OffsitePaymentGatewayBase {
     }
     else {
       $payment->setState('refunded');
+      $order = $payment->getOrder();
+      $order->set('state', 'canceled');
+      $order->save();
     }
 
     $payment->setRefundedAmount($new_refunded_amount);
