@@ -191,7 +191,7 @@ class FondyOffsiteRedirect extends OffsitePaymentGatewayBase {
             case 'reversed':
               // Reformat amount.
               // Remove 2 last zero from the reversal_amount.
-              $reversal_amount = rtrim($data['reversal_amount'], '00');
+              $reversal_amount = substr($data['reversal_amount'], 0, -2);
               // Refund.
               $this->refundPaymentProcess($payment, new Price($reversal_amount, $data['currency']));
               break;
@@ -207,7 +207,7 @@ class FondyOffsiteRedirect extends OffsitePaymentGatewayBase {
                 if (!empty($data['reversal_amount']) && empty($capture_status)) {
                   // Reformat amount.
                   // Remove 2 last zero from the reversal_amount.
-                  $reversal_amount = rtrim($data['reversal_amount'], '00');
+                  $reversal_amount = substr($data['reversal_amount'], 0, -2);
                   // Refund.
                   $this->refundPaymentProcess($payment, new Price($reversal_amount, $data['currency']));
                 }
