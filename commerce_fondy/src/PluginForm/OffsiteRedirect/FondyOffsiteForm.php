@@ -49,7 +49,7 @@ class FondyOffsiteForm extends BasePaymentOffsiteForm {
     $configuration = $payment_gateway_plugin->getConfiguration();
 
     // Payment gateway configurations.
-    $mid = $configuration['merchant_id'];
+    $mid = str_replace(' ', '', $configuration['merchant_id']);
     $secret_key = $configuration['secret_key'];
     $order_id = $payment->getOrderId();
     $response_url = $this->generateResponseUrl($configuration['response_url'], $order_id);
