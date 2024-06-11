@@ -5,7 +5,6 @@ namespace Drupal\commerce_fondy\PluginForm\OffsiteRedirect;
 use Drupal\commerce_order\Entity\Order;
 use Drupal\commerce_payment\PluginForm\PaymentOffsiteForm as BasePaymentOffsiteForm;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Url;
 
 /**
@@ -54,7 +53,6 @@ class FondyOffsiteForm extends BasePaymentOffsiteForm {
     $secret_key = $configuration['secret_key'];
     $order_id = $payment->getOrderId();
     $response_url = $this->generateResponseUrl($configuration['response_url'], $order_id);
-    $language = $configuration['language'];
     $preauth = $configuration['preauth'];
 
     // Payment data.
@@ -89,16 +87,6 @@ class FondyOffsiteForm extends BasePaymentOffsiteForm {
       $order_id);
     $subscriber_id = $order->getCustomerId();
 
-    // Build the customer language.
-    if (
-      $language == LanguageInterface::LANGCODE_NOT_SPECIFIED
-      &&
-      $customer = $order->getCustomer()
-    ) {
-      // Use account preferred language.
-      $language = $customer->getPreferredLangcode();
-    }
-
     // Build the data array.
     $f_data = [
       'merchant_id' => $mid,
@@ -120,7 +108,6 @@ class FondyOffsiteForm extends BasePaymentOffsiteForm {
       'server_callback_url' => $callback_url,
       'sender_email' => '',
       'preauth' => $preauth ? 'Y' : 'N',
-      'lang' => strtolower($language),
       'reservation_data' => $this->getReservationData($order),
     ];
 

@@ -9,7 +9,6 @@ use Drupal\commerce_payment\Entity\PaymentInterface;
 use Drupal\commerce_payment\Plugin\Commerce\PaymentGateway\OffsitePaymentGatewayBase;
 use Drupal\commerce_price\Price;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Language\LanguageInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -48,7 +47,6 @@ class FondyOffsiteRedirect extends OffsitePaymentGatewayBase {
     return [
         'merchant_id' => '',
         'secret_key' => '',
-        'language' => 'en',
         'preauth' => FALSE,
       ] + parent::defaultConfiguration();
   }
@@ -87,16 +85,6 @@ class FondyOffsiteRedirect extends OffsitePaymentGatewayBase {
       '#default_value' => $this->configuration['response_url'],
     ];
 
-    // Build language selection.
-    $languages = $this->getFondyLanguages() + [LanguageInterface::LANGCODE_NOT_SPECIFIED => $this->t('Language of the user')];
-    $form['language'] = [
-      '#type' => 'select',
-      '#title' => $this->t('Language'),
-      '#description' => $this->t('The language for the credit card form.'),
-      '#options' => $languages,
-      '#default_value' => $this->configuration['language'],
-    ];
-
     $form['preauth'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('preauth'),
@@ -118,25 +106,8 @@ class FondyOffsiteRedirect extends OffsitePaymentGatewayBase {
       $this->configuration['merchant_id'] = $values['merchant_id'];
       $this->configuration['response_url'] = $values['response_url'];
       $this->configuration['secret_key'] = $values['secret_key'];
-      $this->configuration['language'] = $values['language'];
       $this->configuration['preauth'] = $values['preauth'];
     }
-  }
-
-  /**
-   * Returns an array of languages supported by Fondy.
-   *
-   * @return array
-   *   Array with key being language codes, and value being names.
-   */
-  public function getFondyLanguages() {
-    return [
-      'ru' => $this->t('Russian'),
-      'uk' => $this->t('Ukrainian'),
-      'en' => $this->t('English'),
-      'pl' => $this->t('Polish'),
-      'lv' => $this->t('Latvian'),
-    ];
   }
 
   /**

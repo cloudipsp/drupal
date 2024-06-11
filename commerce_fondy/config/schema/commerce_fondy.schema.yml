@@ -7,9 +7,6 @@ commerce_payment.commerce_payment_gateway.plugin.fondy_redirect_checkout:
     secret_key:
       type: string
       label: 'Secret key'
-    language:
-      type: string
-      label: 'Language'
     preauth:
       type: boolean
       label: 'Preauth'
